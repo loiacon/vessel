@@ -1,0 +1,171 @@
+#!/bin/bash
+#
+# Get all Pull Requests head branches, perform a 'git checkout' command
+# into those head branches and then run all automated tests.
+
+# Unofficial Bash Strict Mode
+set -e
+set -u
+set -o pipefail
+IFS=$'\n\t'
+
+# Imports
+# source ../add.sh
+
+# Vars
+readonly INSTALL_FLAG='--install'
+readonly CLEANUP_FLAG='--cleanup'
+
+function install_lemp_stack() {
+  # Install Homebrew if it is not already installed
+  if command -v brew>/dev/null; then
+    brew update && brew cleanup
+  else
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  fi
+
+  # Install MongoDB
+  brew install mongodb
+
+  # Install MySQL
+  brew install mysql@5.7
+
+  # Install NGINX
+  brew install nginx
+  sed -i '' 's/8080/80/g' /usr/local/etc/nginx/nginx.conf
+
+  # Install dnsmasq
+  brew install dnsmasq
+  # Copy the daemon configuration file into place.
+  sudo cp $(brew list dnsmasq | grep /homebrew.mxcl.dnsmasq.plist$) /Library/LaunchDaemons/
+  # Start Dnsmasq automatically.
+  sudo launchctl load /Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist
+  # Configure dnsmasq
+  sudo echo "address=/dev/127.0.0.1" >> /usr/local/etc/dnsmasq.conf
+  # restart dnsmasq
+  sudo brew services dnsmasq restart
+  # Configure OSX
+  echo "nameserver 127.0.0.1" >> /etc/resolver/dev
+
+  # Install PHP 
+  brew install php@7.2
+  brew tap kyslik/php
+  brew install php72-mongodb
+
+  # Starting services
+  sudo brew services restart nginx
+  brew services restart php@7.2
+  brew services restart mysql@5.7
+  brew services restart mongodb
+
+  # Listing the running services
+  brew services list
+
+  exit 0
+}
+
+function remove_lemp_stack() {
+  if brew ls --versions mongodb > /dev/null; then
+    brew uninstall mongodb
+  else
+    echo "MongoDB is not installed"
+  fi
+
+  if brew ls --versions mysql@5.7 > /dev/null; then
+    brew uninstall mysql@5.7
+  else
+    echo "MySQL 5.7 is not installed"
+  fi
+
+  if brew ls --versions nginx > /dev/null; then
+    brew uninstall nginx
+  else
+    echo "NGINX is not installed"
+  fi
+
+  if brew ls --versions php > /dev/null; then
+    brew uninstall php72-mongodb
+    brew uninstall php
+  else
+    echo "PHP is not installed"
+  fi
+
+  if brew ls --versions php@7.2 > /dev/null; then
+    brew uninstall php@7.2
+  else
+    echo "PHP@7.2 is not installed"
+  fi
+
+  if brew ls --versions redis > /dev/null; then
+    brew uninstall redis
+  else
+    echo "Redis is not installed"
+  fi
+
+  brew update && brew cleanup
+
+  exit 0
+}
+
+function link_to_nginx() {
+  local path="$(pwd)"
+  local project=${path##*/} 
+  local conf_file="/usr/local/etc/nginx/servers/${project}.conf"
+
+  # Cretae log directory
+  mkdir -p "/usr/local/etc/nginx/log/${project}"
+
+  echo "server {" >> $conf_file
+  echo "" >> $conf_file
+  echo "    server_name ${project}.dev;" >> $conf_file
+  echo "    root ${path}/public;" >> $conf_file
+  echo "" >> $conf_file
+  echo "    error_log  /usr/local/etc/nginx/log/${project}/error.log;" >> $conf_file
+  echo "    access_log  /usr/local/etc/nginx/log/${project}/access.log;" >> $conf_file
+  echo "" >> $conf_file
+  echo "    location / {" >> $conf_file
+  echo "        try_files \$uri /index.php\$is_args\$args;" >> $conf_file
+  echo "    }" >> $conf_file
+  echo "" >> $conf_file
+  echo "    location ~ index.php {" >> $conf_file
+  echo "        fastcgi_pass 127.0.0.1:9000;" >> $conf_file
+  echo "        fastcgi_split_path_info ^(.+\.php)(/.*)$;" >> $conf_file
+  echo "        include fastcgi_params;" >> $conf_file
+  echo "        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;" >> $conf_file
+  echo "        fastcgi_param DOCUMENT_ROOT \$realpath_root;" >> $conf_file
+  echo "        fastcgi_read_timeout 300s;" >> $conf_file
+  echo "    }" >> $conf_file
+  echo "}" >> $conf_file
+
+  echo "Project ${project} linked"
+  exit 0
+}
+
+function unlink_from_nginx() {
+  local path="$(pwd)"
+  local project=${path##*/} 
+  local conf_file="/usr/local/etc/nginx/log"
+  local conf_file="/usr/local/etc/nginx/servers/${project}.conf"
+
+  if [[ -f "${conf_file}" ]]; then
+    rm -rf "${conf_file}"
+  fi
+
+  if [[ -f "${conf_file}" ]]; then
+    rm -rf "${conf_file}"
+  fi
+
+  echo "Project ${project} was unlinked"
+  exit 0
+}
+
+while test $# -gt 0; do
+  case "$1" in
+    --install) install_lemp_stack ;;
+    --cleanup) remove_lemp_stack ;;
+    --link) link_to_nginx ;;
+    --unlink) unlink_from_nginx ;;
+    *) print_usage
+       exit 1 ;;
+  esac
+done
