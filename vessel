@@ -13,94 +13,159 @@ IFS=$'\n\t'
 # source ../add.sh
 
 # Vars
-readonly INSTALL_FLAG='--install'
-readonly CLEANUP_FLAG='--cleanup'
 
 function install_lemp_stack() {
-  # Install Homebrew if it is not already installed
+
+  #####################################
+  # Install Homebrew if isn't present
+  #####################################
+
   if command -v brew>/dev/null; then
     brew update && brew cleanup
   else
-    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    /usr/bin/ruby -e "$(curl -fsSL https://bit.ly/1LEgSWs)"
   fi
 
+  #####################################
+  # Install PHP
+  #####################################
+
+  brew install php
+  sudo pecl install mongodb
+  sudo pecl install xdebug-2.7.0beta1
+
+  #####################################
   # Install MongoDB
+  #####################################
+
   brew install mongodb
 
+  #####################################
   # Install MySQL
-  brew install mysql@5.7
+  #####################################
 
+  brew install mysql
+
+  #####################################
   # Install NGINX
+  #####################################
+
   brew install nginx
   sed -i '' 's/8080/80/g' /usr/local/etc/nginx/nginx.conf
 
+  #####################################
+  # Install Redis
+  #####################################
+
+  brew install redis
+
+  #####################################
   # Install dnsmasq
+  #####################################
+
   brew install dnsmasq
-  # Copy the daemon configuration file into place.
-  sudo cp $(brew list dnsmasq | grep /homebrew.mxcl.dnsmasq.plist$) /Library/LaunchDaemons/
-  # Start Dnsmasq automatically.
-  sudo launchctl load /Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist
+
   # Configure dnsmasq
   sudo echo "address=/dev/127.0.0.1" >> /usr/local/etc/dnsmasq.conf
-  # restart dnsmasq
-  sudo brew services dnsmasq restart
+
   # Configure OSX
-  echo "nameserver 127.0.0.1" >> /etc/resolver/dev
+  sudo echo "nameserver 127.0.0.1" >> /etc/resolver/dev
 
-  # Install PHP 
-  brew install php@7.2
-  brew tap kyslik/php
-  brew install php72-mongodb
-
+  #####################################
   # Starting services
-  sudo brew services restart nginx
-  brew services restart php@7.2
-  brew services restart mysql@5.7
-  brew services restart mongodb
+  #####################################
 
+  brew services restart php
+  brew services restart mysql
+  brew services restart mongodb
+  brew services restart redis
+  sudo brew services restart dnsmasq
+  sudo brew services restart nginx
+
+  #####################################
   # Listing the running services
+  #####################################
+
   brew services list
 
   exit 0
 }
 
 function remove_lemp_stack() {
+
+  #####################################
+  # Uninstall PHP
+  #####################################
+
+  if brew ls --versions php > /dev/null; then
+    sudo pecl uninstall mongodb
+    sudo pecl uninstall xdebug-2.7.0beta1
+    brew uninstall php
+
+    sudo rm -rf /etc/php-fpm.d
+    sudo rm -rf /usr/local/etc/php
+  else
+    echo "PHP is not installed"
+  fi
+
+  #####################################
+  # Uninstall MongoDB
+  #####################################
+
   if brew ls --versions mongodb > /dev/null; then
     brew uninstall mongodb
   else
     echo "MongoDB is not installed"
   fi
 
-  if brew ls --versions mysql@5.7 > /dev/null; then
-    brew uninstall mysql@5.7
+  #####################################
+  # Uninstall MySQL
+  #####################################
+
+  if brew ls --versions mysql > /dev/null; then
+    brew uninstall mysql
   else
-    echo "MySQL 5.7 is not installed"
+    echo "MySQL is not installed"
   fi
+
+  #####################################
+  # Uninstall NGINX
+  #####################################
 
   if brew ls --versions nginx > /dev/null; then
     brew uninstall nginx
+
+    sudo rm -rf /usr/local/etc/nginx
   else
     echo "NGINX is not installed"
   fi
 
-  if brew ls --versions php > /dev/null; then
-    brew uninstall php72-mongodb
-    brew uninstall php
-  else
-    echo "PHP is not installed"
-  fi
-
-  if brew ls --versions php@7.2 > /dev/null; then
-    brew uninstall php@7.2
-  else
-    echo "PHP@7.2 is not installed"
-  fi
+  #####################################
+  # Uninstall Redis
+  #####################################
 
   if brew ls --versions redis > /dev/null; then
     brew uninstall redis
   else
     echo "Redis is not installed"
   fi
+
+  #####################################
+  # Uninstall DNSMasq
+  #####################################
+
+  if brew ls --versions dnsmasq > /dev/null; then
+    brew uninstall dnsmasq
+
+    sudo rm -rf /usr/local/etc/dnsmasq.conf
+    sudo rm -rf /etc/resolver/dev
+  else
+    echo "DNSMasq is not installed"
+  fi
+
+  #####################################
+  # Cleaning up HomeBrew dependencies
+  #####################################
 
   brew update && brew cleanup
 
@@ -109,42 +174,45 @@ function remove_lemp_stack() {
 
 function link_to_nginx() {
   local path="$(pwd)"
-  local project=${path##*/} 
+  local project=${path##*/}
   local conf_file="/usr/local/etc/nginx/servers/${project}.conf"
 
   # Cretae log directory
   mkdir -p "/usr/local/etc/nginx/log/${project}"
 
-  echo "server {" >> $conf_file
-  echo "" >> $conf_file
-  echo "    server_name ${project}.dev;" >> $conf_file
-  echo "    root ${path}/public;" >> $conf_file
-  echo "" >> $conf_file
-  echo "    error_log  /usr/local/etc/nginx/log/${project}/error.log;" >> $conf_file
-  echo "    access_log  /usr/local/etc/nginx/log/${project}/access.log;" >> $conf_file
-  echo "" >> $conf_file
-  echo "    location / {" >> $conf_file
-  echo "        try_files \$uri /index.php\$is_args\$args;" >> $conf_file
-  echo "    }" >> $conf_file
-  echo "" >> $conf_file
-  echo "    location ~ index.php {" >> $conf_file
-  echo "        fastcgi_pass 127.0.0.1:9000;" >> $conf_file
-  echo "        fastcgi_split_path_info ^(.+\.php)(/.*)$;" >> $conf_file
-  echo "        include fastcgi_params;" >> $conf_file
-  echo "        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;" >> $conf_file
-  echo "        fastcgi_param DOCUMENT_ROOT \$realpath_root;" >> $conf_file
-  echo "        fastcgi_read_timeout 300s;" >> $conf_file
-  echo "    }" >> $conf_file
-  echo "}" >> $conf_file
+cat <<EOM >$conf_file
+  server {
 
+      server_name ${project}.dev;
+      root ${path}/public;
+
+      error_log  /usr/local/etc/nginx/log/${project}/error.log;
+      access_log  /usr/local/etc/nginx/log/${project}/access.log;
+
+      location / {
+          try_files \$uri /index.php\$is_args\$args;
+      }
+
+      location ~ index.php {
+          fastcgi_pass 127.0.0.1:9000;
+          fastcgi_split_path_info ^(.+\.php)(/.*)$;
+          include fastcgi_params;
+          fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
+          fastcgi_param DOCUMENT_ROOT \$realpath_root;
+          fastcgi_read_timeout 300s;
+      }
+  }
+EOM
+
+  sudo brew services restart nginx > /dev/null
   echo "Project ${project} linked"
+
   exit 0
 }
 
 function unlink_from_nginx() {
   local path="$(pwd)"
-  local project=${path##*/} 
-  local conf_file="/usr/local/etc/nginx/log"
+  local project=${path##*/}
   local conf_file="/usr/local/etc/nginx/servers/${project}.conf"
 
   if [[ -f "${conf_file}" ]]; then
@@ -155,7 +223,9 @@ function unlink_from_nginx() {
     rm -rf "${conf_file}"
   fi
 
+  sudo brew services restart nginx > /dev/null
   echo "Project ${project} was unlinked"
+
   exit 0
 }
 
