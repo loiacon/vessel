@@ -12,4 +12,4 @@ vessel --cleanup
 
 sudo rm -rf /usr/local/bin/vessel
 
-sudo sed "/vessel/d" sudoers
+sudo sed "/vessel/d" /etc/sudoers
