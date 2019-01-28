@@ -27,7 +27,7 @@ vessel --install
 
 NOTE: All thoses software will be installed at once.
 
-### Link project with NGINX:
+### Link project to NGINX:
 
 1. Acces the project directory.
 
@@ -40,6 +40,10 @@ cd ~/Project/someproject
 ```
 vessel --link
 ```
+
+Once the project has been linked you will he able to access him using the project name with `.dev` suffix.
+
+Eg: `http://someproject.dev`
 
 ### Unlink project from NGINX:
 
