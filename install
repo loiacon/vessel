@@ -1,18 +1,12 @@
 #!/bin/bash
 #
-# Get all Pull Requests head branches, perform a 'git checkout' command
-# into those head branches and then run all automated tests.
+# Install vessel and set into the sudoers list.
 
 # Unofficial Bash Strict Mode
 set -e
 set -u
 set -o pipefail
 IFS=$'\n\t'
-
-# Imports
-# source ../add.sh
-
-# Vars
 
 curl -o /usr/local/bin/vessel https://raw.githubusercontent.com/jackmiras/vessel/master/vessel
 

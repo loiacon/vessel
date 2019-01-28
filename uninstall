@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Completely uninstall Vessel from the system.
+
+# Unofficial Bash Strict Mode
+set -e
+set -u
+set -o pipefail
+IFS=$'\n\t'
+
+vessel --cleanup
+
+sudo rm -rf /usr/local/bin/vessel
+
+sudo sed "/vessel/d" sudoers
