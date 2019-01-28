@@ -1,4 +1,4 @@
-Vessel is a open source shell script for managing PHP development environment and related softwares such as databases, cache, application server and dns configurations.
+Vessel is a open source shell script for managing PHP development environment and related softwares such as databases, cache, application server and dns configurations on OSX.
 
 ## Getting Started
 
