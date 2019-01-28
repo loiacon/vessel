@@ -41,7 +41,7 @@ cd ~/Project/someproject
 vessel --link
 ```
 
-Once the project has been linked you will he able to access him using the project name with `.dev` suffix.
+Once the project has been linked you will he able to access him by using the project name with `.dev` suffix.
 
 Eg: `http://someproject.dev`
 
