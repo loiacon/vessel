@@ -4,6 +4,7 @@ Vessel is a open source shell script for managing PHP development environment an
 
 Once you have Vessel installed he will handle the installation of:
 - PHP
+- Xdebug
 - MySQL
 - MongoDB
 - NGINX
