@@ -70,3 +70,16 @@ vessel --cleanup
 ```
 sudo curl -s https://raw.githubusercontent.com/jackmiras/vessel/master/uninstall | bash
 ```
+
+### Table of commands:
+
+| Commands  | Description                                                                      |
+|-----------|----------------------------------------------------------------------------------|
+| --install | Installs PHP, Xdebug, MySQL, MongoDB, NGINX, Redis and DNSMasq.                  |
+| --cleanup | Uninstall all the software described above and theirs respective configurations. |
+| --link    | Link a Laravel project with NGINX.                                               |
+| --unlink  | Unlink a Laravel project with NGINX.                                             |
+| start     |  Start all the services related with the softwares intalled.                     |
+| stop      |  Stop all the services related to the software installed.                        |
+| restart   | Restart all the services related to the software installed.                      |
+| status    | Show the status of the services related to the software installed.               |
