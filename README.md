@@ -71,7 +71,7 @@ vessel --cleanup
 sudo curl -s https://raw.githubusercontent.com/jackmiras/vessel/master/uninstall | bash
 ```
 
-### Table of commands:
+### Table of content:
 
 | Commands  | Description                                                                      |
 |-----------|----------------------------------------------------------------------------------|
