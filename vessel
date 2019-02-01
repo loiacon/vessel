@@ -229,12 +229,51 @@ function unlink_from_nginx() {
   exit 0
 }
 
+function start_services() {
+  brew services start php
+  brew services start mysql
+  brew services start mongodb
+  brew services start redis
+  sudo brew services start dnsmasq
+  sudo brew services start nginx
+  exit 0
+}
+
+function stop_services() {
+  brew services stop php
+  brew services stop mysql
+  brew services stop mongodb
+  brew services stop redis
+  sudo brew services stop dnsmasq
+  sudo brew services stop nginx
+  exit 0
+}
+
+function restart_services() {
+  brew services restart php
+  brew services restart mysql
+  brew services restart mongodb
+  brew services restart redis
+  sudo brew services restart dnsmasq
+  sudo brew services restart nginx
+  exit 0
+}
+
+function list_services() {
+  brew services list | grep -e php -e mysql -e mongodb -e redis -e dnsmasq -e nginx
+  exit 0
+}
+
 while test $# -gt 0; do
   case "$1" in
     --install) install_lemp_stack ;;
     --cleanup) remove_lemp_stack ;;
     --link) link_to_nginx ;;
     --unlink) unlink_from_nginx ;;
+    start) start_services ;;
+    stop) stop_services ;;
+    restart) restart_services ;;
+    status) list_services;;
     *) print_usage
        exit 1 ;;
   esac
